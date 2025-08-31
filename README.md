@@ -54,33 +54,102 @@ This datathon project analyzes ski resort data to identify optimal timing and lo
 
 #### Feature Engineering
 
-- **Comfort Index**: Combined snow comfort, temperature comfort, and crowd density
-  - Formula: `Comfort_Index = Snow_Comfort * 0.5 + Temperature_Comfort * 0.3 + Crowd_Comfort * 0.2`
-  - Where:
-    - `Snow_Comfort = (Snow_Making_Days/7 * 40%) + (Snow_Preservation_Days/7 * 30%) + (Snow_Accumulation/100 * 30%)`
-    - `Temperature_Comfort = 100 - abs(Avg_Max_Temp - 2) * 10` (ideal temperature around 2°C)
-    - `Crowd_Comfort = 100 - (Utilization_Rate * 100)` (lower visitor density = higher comfort)
+#### **Comfort Index**: Overall Skiing Experience Quality (0-100 scale)
 
-- **Affordability Index**: Considered lift costs, accommodation, and transportation
-  - Formula: `Affordability_Index = 100 - (Total_Cost / max_cost * 100)`
-  - Where `Total_Cost = (Lift_Cost * 3) + (Accommodation_Cost * 2) + Transport_Cost`
-  - Higher values indicate more affordable options
+**Purpose**: Measures how comfortable and enjoyable the skiing experience is, combining snow conditions, weather, and crowd levels.
 
-- **Experience Index**: Based on infrastructure, terrain variety, and snow quality
-  - Formula: `Experience_Index = Infrastructure_Score * 0.4 + Terrain_Variety * 0.3 + Snow_Quality_Score * 0.3`
-  - Where:
-    - `Infrastructure_Score = (Lifts/47 * 40%) + (Base_Elevation/1805 * 30%) + (Capacity/15000 * 30%)`
-    - `Terrain_Variety = (Base_Elevation/2000 * 50%) + (Lifts/50 * 50%)`
-    - `Snow_Quality_Score = Snow_Comfort * 0.6 + Base_Elevation/2000 * 40%`
+**Formula**: `Comfort_Index = Snow_Comfort × 0.5 + Temperature_Comfort × 0.3 + Crowd_Comfort × 0.2`
 
-- **Accessibility Index**: Distance-based accessibility from major cities
-  - Formula: `Accessibility_Index = City_Accessibility * 0.6 + Resort_Accessibility * 0.4`
-  - Where:
-    - `City_Accessibility = 100 - (Distance/600 * 100)` (closer = more accessible)
-    - `Resort_Accessibility = (Lifts/47 * 100)` (more lifts = easier access around resort)
+**Components Explained**:
 
-- **Snow Reliability Index**: Evaluated snow quality and consistency
-  - Formula: `Snow_Reliability_Index = (Snow_Making_Days/7 * 30%) + (Snow_Preservation_Days/7 * 25%) + (Comfortable_Days/7 * 20%) + (Snow_Accumulation/100 * 25%)`
+- **Snow_Comfort (50% weight)**: Most important factor for skiing quality
+  - `Snow_Making_Days/7 × 40%`: Days per week with artificial snow production (quality assurance)
+  - `Snow_Preservation_Days/7 × 30%`: Days per week snow stays intact (natural preservation)
+  - `Snow_Accumulation/100 × 30%`: Total snow depth normalized to 0-1 scale
+  - *Why this matters*: Good snow is essential for skiing; artificial snow ensures base coverage, preservation indicates temperature stability, accumulation provides depth for varied terrain
+
+- **Temperature_Comfort (30% weight)**: Optimal skiing temperature
+  - `100 - abs(Avg_Max_Temp - 2) × 10`
+  - *Rationale*: 2°C is ideal skiing temperature (snow stays fresh but not too cold for comfort)
+  - *Calculation*: Further from 2°C = lower comfort (0°C = 80 points, 4°C = 80 points, -3°C = 50 points)
+
+- **Crowd_Comfort (20% weight)**: Lower crowds = higher comfort
+  - `100 - (Utilization_Rate × 100)`
+  - *Example*: 30% utilization = 70 comfort points, 80% utilization = 20 comfort points
+  - *Why*: Fewer crowds mean shorter lift lines, less crowded slopes, better overall experience
+
+#### **Affordability Index**: Cost-Effectiveness Measure (0-100 scale)
+
+**Purpose**: Compares total trip costs across resorts, with higher scores indicating better value for money.
+
+**Formula**: `Affordability_Index = 100 - (Total_Cost / max_cost × 100)`
+
+**Cost Calculation**: `Total_Cost = (Lift_Cost × 3) + (Accommodation_Cost × 2) + Transport_Cost`
+
+**Weighting Rationale**:
+
+- **Lift costs ×3**: Multiple days skiing, most significant expense
+- **Accommodation ×2**: Multi-night stays typical for ski trips
+- **Transport ×1**: One-time cost regardless of trip length
+
+**Normalization**: Costs are scaled against the maximum cost across all resorts, creating a 0-100 scale where:
+
+- 100 = Most affordable option
+- 0 = Most expensive option
+- 50 = Average cost
+
+#### **Experience Index**: Resort Quality and Infrastructure (0-100 scale)
+
+**Purpose**: Measures the overall skiing experience based on resort facilities, terrain diversity, and snow quality.
+
+**Formula**: `Experience_Index = Infrastructure_Score × 0.4 + Terrain_Variety × 0.3 + Snow_Quality_Score × 0.3`
+
+**Components Breakdown**:
+
+- **Infrastructure_Score (40% weight)**: Resort facilities and capacity
+  - `(Lifts/47 × 40%) + (Base_Elevation/1805 × 30%) + (Capacity/15000 × 30%)`
+  - *Normalization factors*: 47 lifts, 1805m elevation, 15000 capacity represent maximum values in dataset
+  - *Why*: More lifts = less waiting, higher elevation = better snow/views, higher capacity = less crowding
+
+- **Terrain_Variety (30% weight)**: Diversity of skiing options
+  - `(Base_Elevation/2000 × 50%) + (Lifts/50 × 50%)`
+  - *Logic*: Higher elevation offers varied terrain (glacial, alpine, tree runs), more lifts access diverse areas
+
+- **Snow_Quality_Score (30% weight)**: Natural snow advantage
+  - `Snow_Comfort × 0.6 + Base_Elevation/2000 × 0.4`
+  - *Reasoning*: Combines actual snow conditions with elevation advantage (higher = more reliable natural snow)
+
+#### **Accessibility Index**: Ease of Reaching and Navigating Resort (0-100 scale)
+
+**Purpose**: Measures how easy it is to reach the resort and move around once there.
+
+**Formula**: `Accessibility_Index = City_Accessibility × 0.6 + Resort_Accessibility × 0.4`
+
+**Components**:
+
+- **City_Accessibility (60% weight)**: Distance from major population centers
+  - `100 - (Distance/600 × 100)`
+  - *600km baseline*: Represents maximum reasonable driving distance for weekend trips
+  - *Example*: 300km distance = 50 accessibility points
+
+- **Resort_Accessibility (40% weight)**: Ease of movement within resort
+  - `(Lifts/47 × 100)`
+  - *Logic*: More lifts = easier access to different areas, less walking between runs
+
+#### **Snow Reliability Index**: Consistency of Snow Conditions (0-100 scale)
+
+**Purpose**: Predicts how reliable snow conditions will be throughout the season, crucial for trip planning.
+
+**Formula**: `Snow_Reliability_Index = (Snow_Making_Days/7 × 30%) + (Snow_Preservation_Days/7 × 25%) + (Comfortable_Days/7 × 20%) + (Snow_Accumulation/100 × 25%)`
+
+**Component Weights Explained**:
+
+- **Snow_Making_Days (30%)**: Artificial snow capability ensures base coverage
+- **Snow_Preservation_Days (25%)**: Natural snow stays intact (temperature stability)
+- **Comfortable_Days (20%)**: Days with good skiing weather conditions
+- **Snow_Accumulation (25%)**: Raw snow depth for terrain coverage
+
+**Why These Weights**: Snow making is most important for reliability (can always create base), preservation indicates consistent conditions, comfort affects skier satisfaction, and accumulation provides variety in terrain access.
 
 ### 2. Exploratory Analysis
 
